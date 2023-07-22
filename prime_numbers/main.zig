@@ -80,7 +80,7 @@ pub fn main() !void {
     var global_stats = newStats();
 
     var i: u64 = 1;
-    const i_max: u64 = 10_000;
+    const i_max: u64 = 1_000_000;
 
     while (i < i_max) : (i += 1) {
         if (isPrime(i, &local_stats)) {
