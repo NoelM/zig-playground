@@ -1,6 +1,6 @@
 const std = @import("std");
 
-const Stats = struct { loops: u64, tries: u64, max_tries: u64, duration: i128, max_duration: i128 };
+const Stats = struct { loops: u64, tries: u64, max_tries: u64, duration: i64, max_duration: i64 };
 
 pub fn newStats() Stats {
     return Stats{
@@ -12,7 +12,7 @@ pub fn newStats() Stats {
     };
 }
 
-pub fn updateStats(s: *Stats, tries: u64, duration: i128) void {
+pub fn updateStats(s: *Stats, tries: u64, duration: i64) void {
     s.loops += 1;
 
     s.tries += tries;
@@ -45,7 +45,7 @@ pub fn printStats(s: *Stats) void {
         const mean_tries: f64 = @intToFloat(f64, s.tries) / @intToFloat(f64, s.loops);
         const mean_duration: f64 = @intToFloat(f64, s.duration) / @intToFloat(f64, s.loops);
 
-        std.debug.print("loops: {d}, mean_tries: {}, max_tries:{d}, mean_dur_ns:{}, max_dur_ns: {d}\n", .{ s.loops, mean_tries, s.max_tries, mean_duration, s.max_duration });
+        std.debug.print("loops: {d}, mean_tries: {}, max_tries:{d}, mean_dur_ms:{}, max_dur_ms: {d}\n", .{ s.loops, mean_tries, s.max_tries, mean_duration, s.max_duration });
     }
 }
 
@@ -55,7 +55,7 @@ pub fn printAndResetStats(s: *Stats) void {
 }
 
 pub fn isPrime(int: u64, stats: *Stats) bool {
-    const start = std.time.nanoTimestamp();
+    const start = std.time.milliTimestamp();
 
     var i: u64 = 2;
     var is_prime = false;
@@ -63,35 +63,44 @@ pub fn isPrime(int: u64, stats: *Stats) bool {
         if (int % i == 0) break;
     }
 
-    updateStats(stats, i - 2, std.time.nanoTimestamp() - start);
+    updateStats(stats, i - 2, std.time.milliTimestamp() - start);
     return is_prime;
 }
 
 pub fn main() !void {
-    const file = try std.fs.cwd().createFile(
-        "prime_numbers.txt",
-        .{ .read = true },
-    );
-    defer file.close();
+    var local_stats = newStats();
+    var global_stats = newStats();
 
     const alloc = std.heap.page_allocator;
 
-    var local_stats = newStats();
-    var global_stats = newStats();
+    var primeNumbers = std.ArrayList(u64).init(alloc);
+    defer primeNumbers.deinit();
 
     var i: u64 = 1;
     const i_max: u64 = 1_000_000;
 
     while (i < i_max) : (i += 1) {
         if (isPrime(i, &local_stats)) {
-            const prime = try std.fmt.allocPrint(alloc, "{d}\n", .{i});
-            defer alloc.free(prime);
+            try primeNumbers.append(i);
+        }
 
-            _ = try file.writeAll(prime);
-        } else if (i % 1000 == 0) {
+        if (i % 1000 == 0) {
             importStats(&local_stats, &global_stats);
             printAndResetStats(&local_stats);
         }
+    }
+
+    const file = try std.fs.cwd().createFile(
+        "prime_numbers.txt",
+        .{ .read = true },
+    );
+    defer file.close();
+
+    for (primeNumbers.items) |number| {
+        const row = try std.fmt.allocPrint(alloc, "{d}\n", .{number});
+        defer alloc.free(row);
+
+        _ = try file.writeAll(row);
     }
 
     importStats(&local_stats, &global_stats);
