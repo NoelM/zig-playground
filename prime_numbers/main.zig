@@ -1,6 +1,8 @@
 const std = @import("std");
 
 const Stats = struct { loops: u64, tries: u64, max_tries: u64, duration: i128, max_duration: i128 };
+const Args = struct { max_loops: u64 };
+const ArgsError = error{IncompleteArgs};
 
 pub fn newStats() Stats {
     return Stats{
@@ -54,6 +56,34 @@ pub fn printAndResetStats(s: *Stats) void {
     resetStats(s);
 }
 
+pub fn parseArgs() !Args {
+    var args = Args{ .max_loops = 0 };
+
+    var is_max = false;
+    for (std.os.argv) |arg| {
+        var str = [_]u8{};
+        std.mem.copy(u8, &str, arg[0..arg.len()]);
+
+        if (is_max) {
+            args.max_loops = try std.fmt.parseInt(u64, str, 10);
+            is_max = false;
+        }
+
+        switch (str) {
+            "--max"[0..] => {
+                is_max = true;
+            },
+            else => {},
+        }
+    }
+
+    if (args.max_loops == 0) {
+        return ArgsError.IncompleteArgs;
+    }
+
+    return args;
+}
+
 pub fn isPrime(int: u64, stats: *Stats) bool {
     const start = std.time.nanoTimestamp();
 
@@ -74,13 +104,14 @@ pub fn main() !void {
     );
     defer file.close();
 
+    const args = try parseArgs();
     const alloc = std.heap.page_allocator;
 
     var local_stats = newStats();
     var global_stats = newStats();
 
     var i: u64 = 1;
-    const i_max: u64 = 1_000_000;
+    const i_max: u64 = args.max_loops;
 
     while (i < i_max) : (i += 1) {
         if (isPrime(i, &local_stats)) {
