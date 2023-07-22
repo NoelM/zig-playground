@@ -58,9 +58,12 @@ pub fn isPrime(int: u64, stats: *Stats) bool {
     const start = std.time.nanoTimestamp();
 
     var i: u64 = 2;
-    var is_prime = false;
+    var is_prime = true;
     while (i < int) : (i += 1) {
-        if (int % i == 0) break;
+        if (int % i == 0) {
+            is_prime = false;
+            break;
+        }
     }
 
     updateStats(stats, i - 2, std.time.nanoTimestamp() - start);
