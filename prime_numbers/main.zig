@@ -40,17 +40,17 @@ pub fn resetStats(s: *Stats) void {
     s.max_duration = 0;
 }
 
-pub fn printStats(s: *Stats) void {
+pub fn printStats(id: u64, s: *Stats) void {
     if (s.loops > 0) {
         const mean_tries: f64 = @intToFloat(f64, s.tries) / @intToFloat(f64, s.loops);
         const mean_duration: f64 = @intToFloat(f64, s.duration) / @intToFloat(f64, s.loops);
 
-        std.debug.print("loops: {d}, mean_tries: {}, max_tries:{d}, mean_dur_ns:{}, max_dur_ns: {d}\n", .{ s.loops, mean_tries, s.max_tries, mean_duration, s.max_duration });
+        std.debug.print("id:{d}, total_tries:{d}, mean_tries:{}, max_tries:{d}, total_dur_ns:{d}, mean_dur_ns:{}, max_dur_ns:{d}\n", .{ id, s.tries, mean_tries, s.max_tries, s.duration, mean_duration, s.max_duration });
     }
 }
 
-pub fn printAndResetStats(s: *Stats) void {
-    printStats(s);
+pub fn printAndResetStats(id: u64, s: *Stats) void {
+    printStats(id, s);
     resetStats(s);
 }
 
@@ -89,7 +89,7 @@ pub fn main() !void {
 
         if (i % 1000 == 0) {
             importStats(&local_stats, &global_stats);
-            printAndResetStats(&local_stats);
+            printAndResetStats(i, &local_stats);
         }
     }
 
@@ -107,5 +107,5 @@ pub fn main() !void {
     }
 
     importStats(&local_stats, &global_stats);
-    printStats(&global_stats);
+    printStats(i, &global_stats);
 }

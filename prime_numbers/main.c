@@ -59,17 +59,17 @@ void resetStats(struct Stats* s) {
     s->max_duration = 0;
 }
 
-void printStats(struct Stats* s) {
+void printStats(uint64_t id, struct Stats* s) {
     if (s->loops > 0) {
         float mean_tries = s->tries / (1.*s->loops);
         float mean_duration = s->tries / (1.*s->loops);
 
-        printf("loops: %llu, mean_tries:%f, max_tries:%llu, mean_dur_ns:%f, max_dur_ns:%lu\n", s->loops, mean_tries, s->max_tries, mean_duration, s->max_duration);
+        printf("id: %llu, total_tries:%llu, mean_tries:%f, max_tries:%llu, total_dur_ms:%lu, mean_dur_ms:%f, max_dur_ms:%lu\n", id, s->tries, mean_tries, s->max_tries, s->duration, mean_duration, s->max_duration);
     }
 }
 
-void printAndResetStats(struct Stats* s) {
-    printStats(s);
+void printAndResetStats(uint64_t id, struct Stats* s) {
+    printStats(id, s);
     resetStats(s);
 }
 
@@ -112,12 +112,12 @@ int main() {
 
         if (i%1000 == 0) {
             importStats(&local_stats, &global_stats);
-            printAndResetStats(&local_stats);
+            printAndResetStats(i, &local_stats);
         }
     }
 
     importStats(&local_stats, &global_stats);
-    printStats(&global_stats);
+    printStats(i, &global_stats);
     
     return 0;
 }
