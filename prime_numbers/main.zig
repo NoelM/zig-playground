@@ -42,10 +42,10 @@ pub fn resetStats(s: *Stats) void {
 
 pub fn printStats(id: u64, s: *Stats) void {
     if (s.loops > 0) {
-        const mean_tries: f64 = @intToFloat(f64, s.tries) / @intToFloat(f64, s.loops);
-        const mean_duration: f64 = @intToFloat(f64, s.duration) / @intToFloat(f64, s.loops);
+        const mean_tries_per_loop: f64 = @intToFloat(f64, s.tries) / @intToFloat(f64, s.loops);
+        const mean_duration_per_try: f64 = @intToFloat(f64, s.duration) / @intToFloat(f64, s.tries);
 
-        std.debug.print("id:{d}, total_tries:{d}, mean_tries:{}, max_tries:{d}, total_dur_ns:{d}, mean_dur_ns:{}, max_dur_ns:{d}\n", .{ id, s.tries, mean_tries, s.max_tries, s.duration, mean_duration, s.max_duration });
+        std.debug.print("{d}, {d}, {}, {d}, {d}, {}, {d}\n", .{ id, s.tries, mean_tries_per_loop, s.max_tries, s.duration, mean_duration_per_try, s.max_duration });
     }
 }
 

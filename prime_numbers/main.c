@@ -61,10 +61,10 @@ void resetStats(struct Stats* s) {
 
 void printStats(uint64_t id, struct Stats* s) {
     if (s->loops > 0) {
-        float mean_tries = s->tries / (1.*s->loops);
-        float mean_duration = s->tries / (1.*s->loops);
+        float mean_tries_per_loop = s->tries / (1.*s->loops);
+        float mean_duration_per_try = s->duration / (1.*s->tries);
 
-        printf("id: %llu, total_tries:%llu, mean_tries:%f, max_tries:%llu, total_dur_ms:%lu, mean_dur_ms:%f, max_dur_ms:%lu\n", id, s->tries, mean_tries, s->max_tries, s->duration, mean_duration, s->max_duration);
+        printf("%llu, %llu, %f, %llu, %lu, %f, %lu\n", id, s->tries, mean_tries_per_loop, s->max_tries, s->duration, mean_duration_per_try, s->max_duration);
     }
 }
 
