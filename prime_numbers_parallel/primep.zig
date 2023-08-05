@@ -1,37 +1,41 @@
 const std = @import("std");
 
-const i64Chan = std.event.Channel(i64);
+const SafeNumber = struct { set: bool, value: u64, mutex: std.Thread.Mutex };
 
-pub fn isPrime(quit: *bool, toComputeChan: *i64Chan, computedChan: *i64Chan) bool {
-    while (!*quit) {
-        const int = await toComputeChan.get();
+pub fn isPrime(quit: *bool, sn: *SafeNumber) void {
+    var int: u64 = 0;
+    while (!quit.*) {
+        std.log.debug("here\n", .{});
+        sn.mutex.lock();
+        if (sn.set) {
+            int = sn.value;
+            std.log.debug("value={d}\n", .{int});
+            sn.mutex.unlock();
+        } else {
+            sn.mutex.unlock();
+        }
+
         var i: u64 = 2;
         while (i < int) : (i += 1) {
             if (int % i == 0) {
+                std.log.debug("is not prime={d}", .{int});
                 break;
             }
         }
-        computedChan.put(int);
     }
+    std.log.debug("is prime={d}", .{int});
 }
 
 pub fn main() !void {
-    const toComputeBuf = []i64;
-    const toComputeChan = std.event.Channel(i64);
-    toComputeChan.init(toComputeBuf);
-
-    const computedBuf = []i64;
-    const computedChan = std.event.Channel(i64);
-    computedChan.init(computedBuf);
-
     var quit = false;
-    var config = std.Thread.SpawnConfig{};
-    std.Thread.spawn(config, isPrime, &quit, &toComputeChan, &computedChan);
+    var sn = SafeNumber{
+        .mutex = std.Thread.Mutex{},
+        .value = 1,
+        .set = true,
+    };
 
-    var value: i64 = 0;
-    while (true) {
-        toComputeChan.put(value);
-        const c = await computedChan.get();
-        std.log.debug("prime: %d", .{c});
-    }
+    const t0 = try std.Thread.spawn(.{}, isPrime, .{ &quit, &sn });
+
+    quit = true;
+    t0.join();
 }
