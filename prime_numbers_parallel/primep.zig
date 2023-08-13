@@ -5,14 +5,10 @@ const Node = U64Queue.Node;
 const Pool = std.Thread.Pool;
 const WaitGroup = std.Thread.WaitGroup;
 
-pub fn isPrime(quit: *bool, wg: *WaitGroup, toTest: *U64Queue, prime: *U64Queue) void {
-    var single_threaded_arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
-    defer single_threaded_arena.deinit();
-
+pub fn isPrime(quit: *bool, all: *const std.mem.Allocator, wg: *WaitGroup, toTest: *U64Queue, prime: *U64Queue) void {
     wg.start();
     defer wg.finish();
 
-    std.log.debug("isPrime start", .{});
     while (!quit.*) {
         if (toTest.get()) |val| {
             const val_test = val.data;
@@ -27,7 +23,7 @@ pub fn isPrime(quit: *bool, wg: *WaitGroup, toTest: *U64Queue, prime: *U64Queue)
             }
 
             if (val_prime) {
-                const node: *Node = single_threaded_arena.allocator().create(Node) catch {
+                const node: *Node = all.create(Node) catch {
                     std.log.debug("error out of memory", .{});
                     continue;
                 };
@@ -69,7 +65,7 @@ pub fn main() !void {
 
     var wg: WaitGroup = undefined;
 
-    threadPool.spawn(isPrime, .{ &quit, &wg, &toTest, &prime }) catch |err| {
+    threadPool.spawn(isPrime, .{ &quit, &arena, &wg, &toTest, &prime }) catch |err| {
         return err;
     };
     std.log.debug("spawn pool", .{});
@@ -78,7 +74,7 @@ pub fn main() !void {
     var i: u64 = 1;
     while (i < i_max) {
         if (toTest.isEmpty()) {
-            const node: *Node = try single_threaded_arena.allocator().create(Node);
+            const node: *Node = try arena.create(Node);
             node.* = .{
                 .prev = undefined,
                 .next = undefined,
