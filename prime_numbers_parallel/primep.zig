@@ -17,24 +17,27 @@ pub fn isPrime(quit: *bool, wg: *WaitGroup, toTest: *U64Queue, prime: *U64Queue)
         if (toTest.get()) |val| {
             const val_test = val.data;
 
+            var val_prime = true;
             var i: u64 = 2;
             while (i < val_test) : (i += 1) {
                 if (val_test % i == 0) {
+                    val_prime = false;
                     break;
                 }
             }
 
-            const node: *Node = single_threaded_arena.allocator().create(Node) catch {
-                std.log.debug("error out of memory", .{});
-                continue;
-            };
-            node.* = .{
-                .prev = undefined,
-                .next = undefined,
-                .data = val_test,
-            };
-            prime.put(node);
-            std.log.debug("is prime={d}", .{val_test});
+            if (val_prime) {
+                const node: *Node = single_threaded_arena.allocator().create(Node) catch {
+                    std.log.debug("error out of memory", .{});
+                    continue;
+                };
+                node.* = .{
+                    .prev = undefined,
+                    .next = undefined,
+                    .data = val_test,
+                };
+                prime.put(node);
+            }
         }
     }
 }
