@@ -64,13 +64,17 @@ pub fn main() !void {
     std.log.debug("init queue", .{});
 
     var wg: WaitGroup = undefined;
+    wg.reset();
 
-    threadPool.spawn(isPrime, .{ &quit, &arena, &wg, &toTest, &prime }) catch |err| {
-        return err;
-    };
+    var thread_id: u32 = 0;
+    while (thread_id < nbCpu) : (thread_id += 1) {
+        threadPool.spawn(isPrime, .{ &quit, &arena, &wg, &toTest, &prime }) catch |err| {
+            return err;
+        };
+    }
     std.log.debug("spawn pool", .{});
 
-    const i_max: u64 = 1000;
+    const i_max: u64 = 1000000;
     var i: u64 = 1;
     while (i < i_max) {
         if (toTest.isEmpty()) {
@@ -86,6 +90,7 @@ pub fn main() !void {
     }
 
     quit = true;
+    wg.wait();
 
     while (!prime.isEmpty()) {
         if (prime.get()) |val| {
