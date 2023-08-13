@@ -62,7 +62,6 @@ pub fn main() !void {
             return err;
         };
     }
-    std.log.debug("spawn pool", .{});
 
     const value_max: u64 = 1000;
     var value: u64 = 1;
@@ -82,9 +81,18 @@ pub fn main() !void {
     quit = true;
     wait_group.wait();
 
+    const file = try std.fs.cwd().createFile(
+        "prime_numbers.txt",
+        .{ .read = true },
+    );
+    defer file.close();
+
     while (!int_prime.isEmpty()) {
-        if (int_prime.get()) |val| {
-            std.log.debug("prime={d}", .{val.data});
+        if (int_prime.get()) |prime_value| {
+            const row = try std.fmt.allocPrint(arena, "{d}\n", .{prime_value.data});
+            defer arena.free(row);
+
+            _ = try file.writeAll(row);
         }
     }
 }
