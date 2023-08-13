@@ -5,95 +5,85 @@ const Node = U64Queue.Node;
 const Pool = std.Thread.Pool;
 const WaitGroup = std.Thread.WaitGroup;
 
-pub fn isPrime(quit: *bool, all: *const std.mem.Allocator, wg: *WaitGroup, toTest: *U64Queue, prime: *U64Queue) void {
-    wg.start();
-    defer wg.finish();
+pub fn isPrimeRoutine(quit: *bool, wait_group: *WaitGroup, int_to_test: *U64Queue, int_prime: *U64Queue) void {
+    wait_group.start();
+    defer wait_group.finish();
 
     while (!quit.*) {
-        if (toTest.get()) |val| {
-            const val_test = val.data;
+        if (int_to_test.get()) |node| {
+            const value = node.data;
 
-            var val_prime = true;
+            var is_value_prime = true;
             var i: u64 = 2;
-            while (i < val_test) : (i += 1) {
-                if (val_test % i == 0) {
-                    val_prime = false;
+            while (i < value) : (i += 1) {
+                if (value % i == 0) {
+                    is_value_prime = false;
                     break;
                 }
             }
 
-            if (val_prime) {
-                const node: *Node = all.create(Node) catch {
-                    std.log.debug("error out of memory", .{});
-                    continue;
-                };
-                node.* = .{
-                    .prev = undefined,
-                    .next = undefined,
-                    .data = val_test,
-                };
-                prime.put(node);
+            if (is_value_prime) {
+                node.prev = undefined;
+                node.next = undefined;
+                int_prime.put(node);
             }
         }
     }
 }
 
 pub fn main() !void {
-    var quit = false;
-
-    const nbCpu: u32 = @intCast(try std.Thread.getCpuCount());
-    std.log.debug("number of CPU={d}", .{nbCpu});
-
     var single_threaded_arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
     defer single_threaded_arena.deinit();
+
     var thread_safe_arena: std.heap.ThreadSafeAllocator = .{
         .child_allocator = single_threaded_arena.allocator(),
     };
     const arena = thread_safe_arena.allocator();
 
-    var threadPool: Pool = undefined;
-    try threadPool.init(Pool.Options{
+    const cpu_count: u32 = @intCast(try std.Thread.getCpuCount());
+
+    var thread_pool: Pool = undefined;
+    try thread_pool.init(Pool.Options{
         .allocator = arena,
-        .n_jobs = nbCpu,
+        .n_jobs = cpu_count,
     });
-    defer threadPool.deinit();
-    std.log.debug("init threads", .{});
+    defer thread_pool.deinit();
 
-    var toTest = U64Queue.init();
-    var prime = U64Queue.init();
-    std.log.debug("init queue", .{});
+    var int_to_test = U64Queue.init();
+    var int_prime = U64Queue.init();
 
-    var wg: WaitGroup = undefined;
-    wg.reset();
+    var wait_group: WaitGroup = undefined;
+    wait_group.reset();
 
+    var quit = false;
     var thread_id: u32 = 0;
-    while (thread_id < nbCpu) : (thread_id += 1) {
-        threadPool.spawn(isPrime, .{ &quit, &arena, &wg, &toTest, &prime }) catch |err| {
+    while (thread_id < cpu_count) : (thread_id += 1) {
+        thread_pool.spawn(isPrimeRoutine, .{ &quit, &wait_group, &int_to_test, &int_prime }) catch |err| {
             return err;
         };
     }
     std.log.debug("spawn pool", .{});
 
-    const i_max: u64 = 1000000;
-    var i: u64 = 1;
-    while (i < i_max) {
-        if (toTest.isEmpty()) {
+    const value_max: u64 = 1000;
+    var value: u64 = 1;
+    while (value < value_max) {
+        if (int_to_test.isEmpty()) {
             const node: *Node = try arena.create(Node);
             node.* = .{
                 .prev = undefined,
                 .next = undefined,
-                .data = i,
+                .data = value,
             };
-            toTest.put(node);
-            i += 1;
+            int_to_test.put(node);
+            value += 1;
         }
     }
 
     quit = true;
-    wg.wait();
+    wait_group.wait();
 
-    while (!prime.isEmpty()) {
-        if (prime.get()) |val| {
+    while (!int_prime.isEmpty()) {
+        if (int_prime.get()) |val| {
             std.log.debug("prime={d}", .{val.data});
         }
     }
