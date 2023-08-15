@@ -61,8 +61,8 @@ pub fn main() !void {
     var wait_group: WaitGroup = undefined;
     wait_group.reset();
 
-    const value_max: u64 = 1000;
-    const shard_size: u64 = 10;
+    const value_max: u64 = 1000000;
+    const shard_size: u64 = 1000;
 
     var value: u64 = 0;
     while (value < value_max) : (value += shard_size) {

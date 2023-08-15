@@ -38,7 +38,7 @@ pub fn main() !void {
     var int_to_test = U64Queue.init();
     var int_prime = U64Queue.init();
 
-    const value_max: u64 = 1000;
+    const value_max: u64 = 1000000;
     var value: u64 = 1;
     while (value < value_max) {
         const node: *Node = try arena.create(Node);
