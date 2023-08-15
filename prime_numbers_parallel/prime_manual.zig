@@ -41,16 +41,14 @@ pub fn main() !void {
     const value_max: u64 = 1000;
     var value: u64 = 1;
     while (value < value_max) {
-        if (int_to_test.isEmpty()) {
-            const node: *Node = try arena.create(Node);
-            node.* = .{
-                .prev = undefined,
-                .next = undefined,
-                .data = value,
-            };
-            int_to_test.put(node);
-            value += 1;
-        }
+        const node: *Node = try arena.create(Node);
+        node.* = .{
+            .prev = undefined,
+            .next = undefined,
+            .data = value,
+        };
+        int_to_test.put(node);
+        value += 1;
     }
 
     var pool = try arena.alloc(std.Thread, cpu_count);
